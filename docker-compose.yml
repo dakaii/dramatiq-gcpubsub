@@ -1,0 +1,30 @@
+services:
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:latest
+    command: gcloud beta emulators pubsub start --project=test-project --host-port=0.0.0.0:8085
+    ports:
+      - "8085:8085"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import socket; socket.create_connection(('localhost', 8085), timeout=2)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  tests:
+    build: .
+    depends_on:
+      pubsub-emulator:
+        condition: service_healthy
+    environment:
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+      PUBSUB_PROJECT_ID: test-project
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: pytest tests/ -v --cov=src/dramatiq_gcpubsub --cov-report=term-missing

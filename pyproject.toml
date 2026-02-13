@@ -1,0 +1,46 @@
+[project]
+name = "dramatiq-gcpubsub"
+description = "A Google Cloud Pub/Sub broker for Dramatiq."
+license = "Apache-2.0"
+keywords = ["dramatiq", "pubsub", "google-cloud"]
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Distributed Computing",
+]
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "dramatiq",
+    "google-cloud-pubsub",
+]
+
+[project.urls]
+Repository = "https://github.com/dakaii/dramatiq-gcpubsub"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-docker",
+    "ruff",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dramatiq_gcpubsub"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-v", "--cov=src/dramatiq_gcpubsub", "--cov-report=term-missing"]
+
+[tool.ruff.lint]
+extend-select = ["I", "UP"]
