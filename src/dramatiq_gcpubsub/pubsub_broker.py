@@ -78,8 +78,13 @@ class PubSubConsumer(dramatiq.Consumer):
             "subscription": self._subscription_path,
             "max_messages": self._prefetch,
         }
+        # Use a finite timeout so pull() does not block indefinitely (e.g. in tests).
+        timeout_sec = max(1, self._timeout_ms // 1000) if self._timeout_ms else 30
         try:
-            response = self._subscriber.pull(request=request)
+            response = self._subscriber.pull(
+                request=request,
+                timeout=timeout_sec,
+            )
         except Exception as e:
             self.logger.exception("Pull failed: %s", e)
             return None

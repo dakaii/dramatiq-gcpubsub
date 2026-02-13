@@ -56,26 +56,61 @@ For production, the service account used by your worker needs at least:
 
 Or use the predefined role `roles/pubsub.admin` for full access.
 
-## Running tests
+## Testing (no real GCP needed)
 
-**Unit tests** (no emulator):
+You do **not** need a real GCP project or Pub/Sub for testing. Use the **Pub/Sub emulator** for all local and CI testing. Real GCP is only for production.
+
+### 1. Unit tests (no emulator)
+
+Fast, mocked; no Docker or GCP:
 
 ```bash
 pytest tests/unit/ -v
 ```
 
-**Integration tests** (require Pub/Sub emulator):
+### 2. Integration tests (with emulator)
+
+These hit the real Pub/Sub API against the emulator (enqueue, consume, ack, requeue).
+
+**Option A – run everything in Docker:**
 
 ```bash
-# Start emulator and run all tests
 docker compose up --build
+```
 
-# Or start emulator only, then run tests locally
-docker compose up -d pubsub-emulator
+**Option B – emulator in Docker, tests on your machine:**
+
+```bash
+# Terminal 1: start emulator
+docker compose up pubsub-emulator
+
+# Terminal 2: run tests (wait for emulator to be ready, then)
 export PUBSUB_EMULATOR_HOST=localhost:8085
 export PUBSUB_PROJECT_ID=test-project
 pytest tests/ -v
 ```
+
+Integration tests are skipped if `PUBSUB_EMULATOR_HOST` is not set.
+
+### 3. Manual smoke test (optional)
+
+From the project root, run the emulator, a worker, and send one task (see `examples/smoke_test.py`):
+
+```bash
+# Terminal 1: start emulator
+docker run --rm -p 8085:8085 gcr.io/google.com/cloudsdktool/cloud-sdk:latest \
+  gcloud beta emulators pubsub start --project=test-project --host-port=0.0.0.0:8085
+
+# Terminal 2: start worker (from project root)
+export PUBSUB_EMULATOR_HOST=localhost:8085 PUBSUB_PROJECT_ID=test-project
+PYTHONPATH=. dramatiq examples.smoke_test
+
+# Terminal 3: send a task
+export PUBSUB_EMULATOR_HOST=localhost:8085 PUBSUB_PROJECT_ID=test-project
+python -c "from examples.smoke_test import add; add.send(3, 7); print('Sent. Check worker terminal.')"
+```
+
+You should see `add(3, 7) = 10` in the worker terminal.
 
 ## Publishing to PyPI
 
